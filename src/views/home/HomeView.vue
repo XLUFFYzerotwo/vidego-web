@@ -144,63 +144,67 @@ onMounted(() => {
 
 <style scoped>
 .home-page {
-  padding-bottom: 32px;
+  padding-bottom: 40px;
 }
 
-/* ── Category Bar ── */
+/* ── 分类标签栏 ── */
 .category-bar {
   display: flex;
   gap: 8px;
-  margin-bottom: 20px;
+  margin-bottom: 22px;
   flex-wrap: wrap;
 }
 
 .cat-btn {
-  padding: 6px 16px;
-  border: 1px solid #e8e8e8;
-  border-radius: 20px;
-  background: #fff;
+  padding: 7px 18px;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-full);
+  background: transparent;
   cursor: pointer;
   font-size: 13px;
-  color: #666;
-  transition: all 0.2s;
+  font-weight: 500;
+  color: var(--text-secondary);
+  transition: all 0.25s ease;
   white-space: nowrap;
 }
 
 .cat-btn:hover {
-  color: #fb7299;
-  border-color: #fb7299;
+  color: var(--brand);
+  border-color: var(--brand-dim);
+  background: var(--brand-dim);
 }
 
 .cat-btn.active {
   color: #fff;
-  background: #fb7299;
-  border-color: #fb7299;
+  background: var(--brand);
+  border-color: var(--brand);
 }
 
 /* ── Video Grid ── */
 .video-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 20px;
+  gap: 22px;
 }
 
 /* ── Skeleton ── */
 .grid-skeleton {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 20px;
+  gap: 22px;
 }
 
 .skeleton-card {
   padding: 12px;
+  background: var(--bg-card);
+  border-radius: var(--radius-md);
 }
 
 /* ── Empty ── */
 .empty-state {
   text-align: center;
   padding: 80px 0;
-  color: #ccc;
+  color: var(--text-tertiary);
 }
 
 .empty-state p {
@@ -211,19 +215,19 @@ onMounted(() => {
 /* ── Load More ── */
 .load-more {
   text-align: center;
-  margin-top: 32px;
+  margin-top: 36px;
 }
 
 .load-btn {
   width: 200px;
-  border-radius: 20px;
+  border-radius: var(--radius-full);
 }
 
 /* ── Loading More ── */
 .loading-more {
   text-align: center;
   padding: 20px;
-  color: #999;
+  color: var(--text-secondary);
   font-size: 13px;
   display: flex;
   align-items: center;
@@ -244,7 +248,7 @@ onMounted(() => {
 @media (max-width: 640px) {
   .video-grid {
     grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-    gap: 12px;
+    gap: 14px;
   }
 
   .category-bar {
@@ -252,7 +256,7 @@ onMounted(() => {
   }
 
   .cat-btn {
-    padding: 4px 12px;
+    padding: 5px 14px;
     font-size: 12px;
   }
 }

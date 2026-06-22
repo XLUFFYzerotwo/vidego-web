@@ -19,11 +19,44 @@
       <div class="detail-layout">
         <!-- ── Main Column ── -->
         <div class="detail-main">
-          <!-- Player -->
-          <VideoPlayer
-            :src="video.videoUrl"
-            :poster="video.coverUrl || undefined"
-            @timeupdate="onTimeUpdate"
+          <!-- Player with Danmaku -->
+          <div class="player-container">
+            <VideoPlayer
+              :src="video.videoUrl"
+              :poster="video.coverUrl || undefined"
+              @timeupdate="onTimeUpdate"
+            />
+            <DanmakuOverlay
+              :video-id="videoId"
+              :current-time="currentTime"
+              :settings="danmakuSettings"
+              :duration="video.duration || 0"
+            />
+            
+            <!-- Danmaku Settings Button -->
+            <button 
+              class="danmaku-settings-btn"
+              @click="showDanmakuSettings = !showDanmakuSettings"
+            >
+              <el-icon :size="18"><Setting /></el-icon>
+            </button>
+            
+            <!-- Danmaku Settings Panel -->
+            <transition name="slide-up">
+              <div v-if="showDanmakuSettings" class="danmaku-settings-panel">
+                <DanmakuSettings 
+                  :settings="danmakuSettings"
+                  @update="onDanmakuSettingsUpdate"
+                />
+              </div>
+            </transition>
+          </div>
+
+          <!-- Danmaku Sender -->
+          <DanmakuSender
+            :video-id="videoId"
+            :current-time="currentTime"
+            :logged-in="authStore.isLoggedIn"
           />
 
           <!-- Video Info -->
@@ -133,16 +166,21 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, watch, reactive } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { View, Pointer, Star, Share, ChatDotRound, VideoCamera } from '@element-plus/icons-vue'
+import { View, Pointer, Star, Share, ChatDotRound, VideoCamera, Setting } from '@element-plus/icons-vue'
 import { useAuthStore } from '@/stores/auth'
 import { videoApi } from '@/api/video'
 import { feedApi } from '@/api/feed'
 import VideoPlayer from '@/components/VideoPlayer.vue'
 import CommentSection from '@/components/CommentSection.vue'
+import DanmakuOverlay from '@/components/DanmakuOverlay.vue'
+import DanmakuSender from '@/components/DanmakuSender.vue'
+import DanmakuSettings from '@/components/DanmakuSettings.vue'
 import type { VideoVO } from '@/types/video'
+import type { DanmakuSettings as DanmakuSettingsType } from '@/types/danmaku'
+import { defaultDanmakuSettings } from '@/types/danmaku'
 
 const route = useRoute()
 const router = useRouter()
@@ -154,6 +192,11 @@ const loading = ref(true)
 const error = ref(false)
 const liked = ref(false)
 const favorited = ref(false)
+const currentTime = ref(0)
+
+// ── Danmaku Settings ──
+const danmakuSettings = reactive<DanmakuSettingsType>({ ...defaultDanmakuSettings })
+const showDanmakuSettings = ref(false)
 
 // ── Recommended ──
 const recommended = ref<VideoVO[]>([])
@@ -203,11 +246,17 @@ async function fetchLikeStatus() {
 // ── View Recording ──
 let viewRecorded = false
 
-function onTimeUpdate(currentTime: number) {
-  if (!viewRecorded && currentTime > 3) {
+function onTimeUpdate(time: number) {
+  currentTime.value = time
+  if (!viewRecorded && time > 3) {
     viewRecorded = true
     videoApi.recordView(videoId.value).catch(() => {})
   }
+}
+
+// ── Danmaku Settings ──
+function onDanmakuSettingsUpdate(settings: DanmakuSettingsType) {
+  Object.assign(danmakuSettings, settings)
 }
 
 // ── Like ──
@@ -309,6 +358,11 @@ onMounted(() => {
 </script>
 
 <style scoped>
+/*
+ * ██ 视频详情页 — 全面 UI 优化
+ * 统一圆角 12px，玻璃拟态，大量留白，粉色主色 #FF77A9
+ */
+
 .video-detail {
   max-width: 1200px;
   margin: 0 auto;
@@ -316,13 +370,13 @@ onMounted(() => {
 
 /* ── Loading / Error ── */
 .loading-state, .error-state {
-  padding: 40px 0;
+  padding: 48px 0;
 }
 
-/* ── Layout ── */
+/* ── 双栏布局，增加间距 ── */
 .detail-layout {
   display: flex;
-  gap: 24px;
+  gap: 28px;
   align-items: flex-start;
 }
 
@@ -336,17 +390,78 @@ onMounted(() => {
   flex-shrink: 0;
 }
 
-/* ── Info Section ── */
+/* ── 播放器容器：大圆角 16px + 外发光 ── */
+.player-container {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.04),
+              0 0 40px rgba(255, 119, 169, 0.10);
+  background: #1A1A22;
+}
+
+.danmaku-settings-btn {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  color: #fff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 20;
+  transition: background 0.2s, transform 0.2s;
+}
+
+.danmaku-settings-btn:hover {
+  background: rgba(0, 0, 0, 0.7);
+  transform: translateX(-50%) scale(1.1);
+}
+
+.danmaku-settings-panel {
+  position: absolute;
+  bottom: 60px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 280px;
+  z-index: 30;
+  box-shadow: var(--shadow-lg);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.slide-up-enter-active,
+.slide-up-leave-active {
+  transition: all 0.3s ease;
+}
+
+.slide-up-enter-from,
+.slide-up-leave-to {
+  opacity: 0;
+  transform: translateY(20px);
+}
+
+/* ── 视频信息区：去除生硬分割线，留白增加 ── */
 .info-section {
-  padding: 16px 0 12px;
-  border-bottom: 1px solid #f0f0f0;
+  padding: 20px 0 14px;
+  border-bottom: 1px solid var(--border-light);
 }
 
 .video-title {
-  font-size: 18px;
+  font-size: 20px;
   font-weight: 600;
-  margin: 0 0 12px;
-  color: #333;
+  margin: 0 0 14px;
+  color: var(--text-primary);
   line-height: 1.4;
 }
 
@@ -359,9 +474,9 @@ onMounted(() => {
 .meta-left {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
   font-size: 13px;
-  color: #999;
+  color: var(--text-secondary);
 }
 
 .stat-item {
@@ -371,52 +486,59 @@ onMounted(() => {
 }
 
 .dot {
-  color: #ddd;
+  color: var(--text-tertiary);
   padding: 0 4px;
 }
 
+/* ── 互动按钮：圆润 + hover 填充粉色 ── */
 .meta-actions {
   display: flex;
-  gap: 8px;
+  gap: 10px;
 }
 
 .action-btn {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 6px 16px;
-  border: 1px solid #e8e8e8;
-  border-radius: 20px;
-  background: #fff;
+  padding: 7px 18px;
+  border: 1px solid var(--border-hover);
+  border-radius: var(--radius-full);
+  background: transparent;
   cursor: pointer;
   font-size: 13px;
-  color: #666;
-  transition: all 0.2s;
+  color: var(--text-secondary);
+  transition: all 0.25s ease;
 }
 
 .action-btn:hover {
-  color: #fb7299;
-  border-color: #fb7299;
+  color: var(--brand);
+  border-color: var(--brand);
+  background: var(--brand-dim);
+  transform: translateY(-1px);
 }
 
 .action-btn.active {
-  color: #fb7299;
-  border-color: #fb7299;
-  background: #fff8fa;
+  color: var(--brand);
+  border-color: var(--brand);
+  background: var(--brand-dim);
 }
 
-/* ── Author Section ── */
+.action-btn:active {
+  transform: translateY(0);
+}
+
+/* ── UP主信息区 ── */
 .author-section {
   display: flex;
   align-items: center;
-  padding: 16px 0;
-  border-bottom: 1px solid #f0f0f0;
+  padding: 18px 0;
+  border-bottom: 1px solid var(--border-light);
 }
 
 .author-info {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 14px;
   text-decoration: none;
   color: inherit;
 }
@@ -424,31 +546,32 @@ onMounted(() => {
 .author-detail {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 3px;
 }
 
 .author-name {
   font-weight: 600;
   font-size: 15px;
-  color: #333;
+  color: var(--text-primary);
 }
 
 .author-stats {
   font-size: 12px;
-  color: #999;
+  color: var(--text-secondary);
 }
 
-/* ── Description ── */
+/* ── 描述 & 标签 ── */
 .desc-section {
-  padding: 16px 0;
-  border-bottom: 1px solid #f0f0f0;
+  padding: 18px 0;
+  border-bottom: 1px solid var(--border-light);
 }
 
 .video-desc {
-  margin: 0 0 12px;
+  margin: 0 0 14px;
   font-size: 14px;
-  line-height: 1.6;
-  color: #555;
+  line-height: 1.7;
+  color: var(--text-primary);
+  opacity: 0.85;
   white-space: pre-wrap;
 }
 
@@ -460,42 +583,61 @@ onMounted(() => {
 
 .video-tag {
   cursor: pointer;
+  border-radius: var(--radius-full) !important;
+  border: none !important;
+  background: var(--brand-dim) !important;
+  color: var(--brand) !important;
+  font-weight: 500;
+  transition: all 0.2s;
 }
 
-/* ── Sidebar ── */
+.video-tag:hover {
+  background: rgba(255, 119, 169, 0.18) !important;
+}
+
+/* ── 右侧推荐栏 ── */
 .sidebar-title {
   font-size: 16px;
   font-weight: 600;
-  margin: 0 0 16px;
-  color: #333;
+  margin: 0 0 18px;
+  color: var(--text-primary);
+  letter-spacing: -0.3px;
 }
 
 .recommend-list {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 14px;
 }
 
+/*
+ * 推荐卡片 — 大圆角、hover 上浮 + 柔和阴影
+ */
 .recommend-card {
   display: flex;
-  gap: 8px;
+  gap: 10px;
   text-decoration: none;
   color: inherit;
-  border-radius: 6px;
-  transition: background 0.2s;
+  border-radius: var(--radius-md);
   overflow: hidden;
+  transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+  padding: 6px;
+  margin: -6px;
 }
 
 .recommend-card:hover {
-  background: #f9f9f9;
+  background: rgba(0, 0, 0, 0.02);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
 }
 
+/* 缩略图容器 — 去除黑边 */
 .rec-thumb {
-  width: 160px;
+  width: 168px;
   flex-shrink: 0;
   position: relative;
   aspect-ratio: 16 / 9;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   overflow: hidden;
   background: #f0f0f0;
 }
@@ -511,19 +653,24 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #ccc;
+  color: var(--text-tertiary);
   background: #f5f5f5;
 }
 
+/* 时长标签 — 深色半透明圆角，悬浮在右下角 */
 .rec-duration {
   position: absolute;
-  bottom: 4px;
-  right: 4px;
-  background: rgba(0, 0, 0, 0.7);
+  bottom: 5px;
+  right: 5px;
+  background: rgba(30, 30, 38, 0.75);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
   color: #fff;
   font-size: 11px;
-  padding: 1px 4px;
-  border-radius: 2px;
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.4;
 }
 
 .rec-info {
@@ -531,14 +678,15 @@ onMounted(() => {
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 4px;
+  padding-top: 2px;
 }
 
 .rec-title {
   margin: 0;
   font-size: 13px;
   font-weight: 500;
-  color: #333;
+  color: var(--text-primary);
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
@@ -549,7 +697,7 @@ onMounted(() => {
 .rec-meta {
   margin: 0;
   font-size: 11px;
-  color: #999;
+  color: var(--text-secondary);
 }
 
 /* ── Responsive ── */
@@ -561,13 +709,17 @@ onMounted(() => {
   .detail-sidebar {
     width: 100%;
   }
+
+  .rec-thumb {
+    width: 140px;
+  }
 }
 
 @media (max-width: 640px) {
   .video-meta {
     flex-direction: column;
     align-items: flex-start;
-    gap: 12px;
+    gap: 14px;
   }
 
   .rec-thumb {

@@ -90,13 +90,19 @@ function onError() {
 </script>
 
 <style scoped>
+/*
+ * 播放器容器 — 大圆角 16px + 细微外发光
+ * 背景用深色而非纯黑，视觉更柔和
+ */
 .video-player-wrapper {
   position: relative;
   width: 100%;
   aspect-ratio: 16 / 9;
-  background: #000;
-  border-radius: 8px;
+  background: #1A1A22;
+  border-radius: var(--radius-lg);
   overflow: hidden;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.04),
+              0 0 32px rgba(255, 119, 169, 0.08);
 }
 
 .video-element {
@@ -105,6 +111,11 @@ function onError() {
   object-fit: contain;
   display: block;
 }
+
+/*
+ * 原生控件微调 — 使用 CSS 伪元素无法修改原生 controls，
+ * 但容器外发光 + 深色底已让播放器视觉提升
+ */
 
 .player-overlay {
   position: absolute;

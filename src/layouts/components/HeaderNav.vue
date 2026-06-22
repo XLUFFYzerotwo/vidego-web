@@ -4,13 +4,13 @@
       <!-- Logo -->
       <router-link to="/home" class="header-logo">
         <svg viewBox="0 0 48 48" width="32" height="32" fill="none">
-          <rect width="48" height="48" rx="12" fill="#fb7299"/>
+          <rect width="48" height="48" rx="12" fill="var(--brand)"/>
           <path d="M16 14v20l16-10L16 14z" fill="#fff"/>
         </svg>
         <span class="logo-text">Vidego</span>
       </router-link>
 
-      <!-- Search -->
+      <!-- Search — hover 柔光效果 -->
       <div class="header-search">
         <el-input
           v-model="keyword"
@@ -101,13 +101,15 @@ function handleCommand(command: string) {
 </script>
 
 <style scoped>
+/* ── 顶部导航：半透明磨砂背景 ── */
 .site-header {
   position: sticky;
   top: 0;
   z-index: 100;
-  background: #fff;
-  border-bottom: 1px solid #e8e8e8;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+  background: var(--bg-glass);
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  border-bottom: 1px solid var(--border-light);
 }
 
 .header-inner {
@@ -132,25 +134,33 @@ function handleCommand(command: string) {
 .logo-text {
   font-size: 20px;
   font-weight: 700;
-  color: #fb7299;
+  color: var(--brand);
   letter-spacing: 0.5px;
 }
 
-/* ── Search ── */
+/* ── 搜索框：hover 柔光 ── */
 .header-search {
   flex: 1;
   max-width: 480px;
 }
 
 .search-input :deep(.el-input__wrapper) {
-  border-radius: 20px;
-  background: #f5f5f5;
-  box-shadow: none !important;
+  border-radius: var(--radius-full);
+  background: rgba(0, 0, 0, 0.04);
+  transition: all 0.3s ease;
+  border: 1px solid transparent;
 }
 
-.search-input :deep(.el-input__wrapper:hover),
+.search-input :deep(.el-input__wrapper:hover) {
+  background: rgba(0, 0, 0, 0.06);
+  border-color: var(--brand-dim);
+  box-shadow: 0 0 0 4px var(--brand-dim) !important;
+}
+
 .search-input :deep(.el-input__wrapper.is-focus) {
-  background: #f0f0f0;
+  background: #fff;
+  border-color: var(--brand);
+  box-shadow: 0 0 0 4px var(--brand-dim) !important;
 }
 
 /* ── Actions ── */
@@ -162,16 +172,22 @@ function handleCommand(command: string) {
   flex-shrink: 0;
 }
 
+/* 上传按钮：渐变粉色 + hover 上浮 */
 .upload-btn {
-  border: 1px solid #e8e8e8;
-  border-radius: 20px;
-  color: #666;
+  border: none;
+  border-radius: var(--radius-full);
+  background: linear-gradient(135deg, var(--brand), var(--brand-light));
+  color: #fff;
   font-size: 13px;
+  padding: 8px 20px;
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.25s;
+  box-shadow: 0 2px 8px var(--brand-glow);
 }
 
 .upload-btn:hover {
-  color: #fb7299;
-  border-color: #fb7299;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px var(--brand-glow);
+  color: #fff;
 }
 
 .upload-text {
@@ -179,13 +195,14 @@ function handleCommand(command: string) {
 }
 
 .nav-btn {
-  border-radius: 20px;
+  border-radius: var(--radius-full);
   font-size: 13px;
-  color: #666;
+  color: var(--text-secondary);
+  border-color: var(--border-hover);
 }
 
 .nav-btn-primary {
-  border-radius: 20px;
+  border-radius: var(--radius-full);
   font-size: 13px;
 }
 
@@ -197,12 +214,13 @@ function handleCommand(command: string) {
 
 .user-avatar {
   border: 2px solid transparent;
-  transition: border-color 0.2s;
+  transition: border-color 0.2s, box-shadow 0.2s;
   cursor: pointer;
 }
 
 .user-avatar:hover {
-  border-color: #fb7299;
+  border-color: var(--brand);
+  box-shadow: 0 0 0 4px var(--brand-dim);
 }
 
 :deep(.el-dropdown-menu__item) {

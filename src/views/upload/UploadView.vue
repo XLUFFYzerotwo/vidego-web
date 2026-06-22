@@ -355,16 +355,17 @@ async function startUpload() {
   try {
     // 1. Get upload token
     const tokenRes = await videoApi.getUploadToken(file.name, file.size)
+    console.log('Upload URL:', tokenRes.data.uploadUrl)
     const { uploadUrl, objectKey } = tokenRes.data
 
     // 生产环境：通过 Nginx 代理上传，不直接暴露 MinIO
     // 将 presigned URL 的 host 部分替换为 /upload-minio
-    const proxiedUrl = uploadUrl.replace(/https?:\/\/[^/]+/, '/upload-minio')
+    // const proxiedUrl = uploadUrl.replace(/https?:\/\/[^/]+/, '/upload-minio')
 
     // 2. Upload video via Nginx proxy
     uploadStage.value = 'uploading'
-    await uploadFileToMinIO(proxiedUrl, file)
-    // await uploadFileToMinIO(uploadUrl, file)
+    // await uploadFileToMinIO(proxiedUrl, file)
+    await uploadFileToMinIO(uploadUrl, file)
 
     // 3. Create video record
     uploadStage.value = 'creating'

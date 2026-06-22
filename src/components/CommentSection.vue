@@ -213,57 +213,95 @@ watch(() => props.videoId, () => {
 </script>
 
 <style scoped>
+/*
+ * 评论区 — 浅灰磨砂输入框，柔和分割线
+ */
 .comment-section {
-  padding: 20px 0;
+  padding: 24px 0 8px;
 }
 
 .section-title {
   font-size: 16px;
   font-weight: 600;
-  margin: 0 0 20px;
-  color: #333;
+  margin: 0 0 22px;
+  color: var(--text-primary);
 }
 
-/* ── Input ── */
+/* ── 评论输入框：浅灰色磨砂圆角 ── */
 .comment-input {
   display: flex;
-  gap: 12px;
-  margin-bottom: 24px;
+  gap: 14px;
+  margin-bottom: 28px;
 }
 
 .input-avatar { flex-shrink: 0; }
 
-.input-wrapper { flex: 1; }
+.input-wrapper {
+  flex: 1;
+}
+
+.input-wrapper :deep(.el-textarea__inner) {
+  border-radius: var(--radius-md);
+  background: rgba(0, 0, 0, 0.03);
+  border: 1px solid var(--border-light);
+  padding: 12px 16px;
+  font-size: 14px;
+  line-height: 1.6;
+  transition: border-color 0.25s, box-shadow 0.25s;
+  box-shadow: none !important;
+  resize: none;
+}
+
+.input-wrapper :deep(.el-textarea__inner:focus) {
+  border-color: var(--brand);
+  box-shadow: 0 0 0 3px var(--brand-dim) !important;
+  background: #fff;
+}
+
+.input-wrapper :deep(.el-input__count) {
+  background: transparent;
+  font-size: 12px;
+  color: var(--text-tertiary);
+}
 
 .input-actions {
   display: flex;
   justify-content: flex-end;
-  margin-top: 8px;
+  margin-top: 10px;
 }
 
 .login-hint {
   font-size: 14px;
-  color: #999;
-  padding: 8px 0;
+  color: var(--text-secondary);
+  padding: 10px 0;
 }
+
 .login-hint a {
-  color: #fb7299;
+  color: var(--brand);
   font-weight: 500;
 }
 
-/* ── List ── */
+/* ── 评论列表 ── */
 .comment-list {
   margin-top: 4px;
+}
+
+/* ── 分割线改用浅透明细线 ── */
+.comment-root + .comment-root {
+  border-top: 1px solid var(--border-light);
+  padding-top: 18px;
+  margin-top: 18px;
 }
 
 /* ── States ── */
 .empty-state {
   text-align: center;
-  padding: 40px 0;
-  color: #ccc;
+  padding: 48px 0;
+  color: var(--text-tertiary);
 }
+
 .empty-state p {
-  margin: 8px 0 0;
+  margin: 10px 0 0;
   font-size: 14px;
 }
 
@@ -271,6 +309,6 @@ watch(() => props.videoId, () => {
 
 .load-more {
   text-align: center;
-  margin-top: 20px;
+  margin-top: 22px;
 }
 </style>

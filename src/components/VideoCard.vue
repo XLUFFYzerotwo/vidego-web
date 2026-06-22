@@ -32,7 +32,6 @@
       <div class="card-info">
         <h4 class="card-title">{{ video.title }}</h4>
         <p v-if="video.description" class="card-desc">{{ video.description }}</p>
-        <!-- <p class="card-author">{{ video.user?.nickname || 'Unknown' }}</p> -->
         <p class="card-meta">{{ formatCount(video.viewCount) }} views</p>
       </div>
     </div>
@@ -63,19 +62,25 @@ function formatDuration(seconds: number): string {
 </script>
 
 <style scoped>
+/*
+ * 视频卡片 — 12px 圆角、hover 上浮 + 柔和阴影
+ */
 .video-card {
   display: block;
   text-decoration: none;
   color: inherit;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   overflow: hidden;
-  transition: transform 0.2s, box-shadow 0.2s;
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
+              box-shadow 0.3s ease;
   cursor: pointer;
+  background: var(--bg-card);
+  box-shadow: var(--shadow-sm);
 }
 
 .video-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
 }
 
 .card-thumb {
@@ -83,7 +88,6 @@ function formatDuration(seconds: number): string {
   width: 100%;
   aspect-ratio: 16 / 9;
   overflow: hidden;
-  border-radius: 8px;
   background: #f5f5f5;
 }
 
@@ -98,25 +102,29 @@ function formatDuration(seconds: number): string {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #ccc;
+  color: var(--text-tertiary);
 }
 
+/* 时长标签 — 深色半透明磨砂，悬浮右下角 */
 .card-duration {
   position: absolute;
   bottom: 6px;
   right: 6px;
-  background: rgba(0, 0, 0, 0.75);
+  background: rgba(30, 30, 38, 0.75);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
   color: #fff;
   font-size: 12px;
-  padding: 2px 6px;
+  padding: 2px 7px;
   border-radius: 4px;
   font-variant-numeric: tabular-nums;
+  line-height: 1.4;
 }
 
 .card-body {
   display: flex;
   gap: 10px;
-  padding: 10px 4px;
+  padding: 12px 8px 10px;
 }
 
 .card-avatar {
@@ -129,10 +137,10 @@ function formatDuration(seconds: number): string {
 }
 
 .card-title {
-  margin: 0 0 4px;
+  margin: 0 0 5px;
   font-size: 14px;
   font-weight: 500;
-  color: #333;
+  color: var(--text-primary);
   line-height: 1.4;
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -141,9 +149,9 @@ function formatDuration(seconds: number): string {
 }
 
 .card-desc {
-  margin: 0 0 4px;
+  margin: 0 0 5px;
   font-size: 12px;
-  color: #aaa;
+  color: var(--text-tertiary);
   line-height: 1.4;
   display: -webkit-box;
   -webkit-line-clamp: 1;
@@ -154,13 +162,13 @@ function formatDuration(seconds: number): string {
 .card-author {
   margin: 0;
   font-size: 12px;
-  color: #999;
+  color: var(--text-secondary);
   line-height: 1.5;
 }
 
 .card-meta {
   margin: 0;
   font-size: 12px;
-  color: #bbb;
+  color: var(--text-tertiary);
 }
 </style>

@@ -1,0 +1,1 @@
+import{J as t}from"./index-CAqv6wfy.js";const s={getRecommended(e){return t.get("/feed/recommended",{params:e})},getLatest(e){return t.get("/feed/latest",{params:e})},getByTag(e,r){return t.get("/feed/by-tag",{params:{tag:e,...r}})}},g={search(e,r){return t.get("/search",{params:{q:e,...r}})}};export{s as f,g as s};

@@ -197,7 +197,15 @@ function onAnimationEnd(event: Event) {
 
 function handleDanmakuReceived(danmaku: DanmakuVO) {
   if (danmaku.videoId !== props.videoId) return
-  // 只在时间窗口内展示，过早的弹幕等 pool fetch 覆盖
+
+  // 始终加入 pool（无论能否立即展示），后续 seek / scheduleFromPool 可复用
+  if (!poolIds.has(danmaku.id)) {
+    poolIds.add(danmaku.id)
+    danmakuPool.value.push(danmaku)
+    danmakuPool.value.sort((a, b) => a.time - b.time)
+  }
+
+  // 时间窗口内 → 立即展示
   if (danmaku.time >= props.currentTime - 1 && danmaku.time <= props.currentTime + LOOKAHEAD) {
     if (!displayIds.has(danmaku.id)) {
       showDanmaku(danmaku)
@@ -278,6 +286,13 @@ watch(() => props.currentTime, (now) => {
   // 检测 seek：向后拖拽或大幅向前跳，清除屏幕弹幕并允许弹幕重复
   if (isSeek(now)) {
     clearDisplayState()
+    // 重置 pool 到当前位置，让预取机制从后端重新加载
+    // 后端 create 弹幕已失效缓存，重新加载可获得最新弹幕列表
+    danmakuPool.value = []
+    poolIds.clear()
+    scanIndex = 0
+    isFetching = false
+    fetchedEnd.value = Math.max(0, Math.floor(now / FETCH_WINDOW) * FETCH_WINDOW)
   }
 
   scheduleFromPool(now)

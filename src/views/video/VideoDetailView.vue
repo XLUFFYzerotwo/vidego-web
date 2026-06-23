@@ -22,13 +22,18 @@
           <!-- Player with Danmaku -->
           <div class="player-container">
             <VideoPlayer
+              ref="videoPlayerRef"
               :src="video.videoUrl"
               :poster="video.coverUrl || undefined"
+              @play="isPlaying = true"
+              @pause="isPlaying = false"
               @timeupdate="onTimeUpdate"
+              @ended="onVideoEnded"
             />
             <DanmakuOverlay
               :video-id="videoId"
               :current-time="currentTime"
+              :is-playing="isPlaying"
               :settings="danmakuSettings"
               :duration="video.duration || 0"
             />
@@ -193,6 +198,7 @@ const error = ref(false)
 const liked = ref(false)
 const favorited = ref(false)
 const currentTime = ref(0)
+const isPlaying = ref(false)
 
 // ── Danmaku Settings ──
 const danmakuSettings = reactive<DanmakuSettingsType>({ ...defaultDanmakuSettings })
@@ -200,6 +206,8 @@ const showDanmakuSettings = ref(false)
 
 // ── Recommended ──
 const recommended = ref<VideoVO[]>([])
+
+const videoPlayerRef = ref()
 
 const videoId = computed(() => Number(route.params.id))
 
@@ -251,6 +259,19 @@ function onTimeUpdate(time: number) {
   if (!viewRecorded && time > 3) {
     viewRecorded = true
     videoApi.recordView(videoId.value).catch(() => {})
+  }
+}
+
+function onVideoEnded() {
+  const next = recommended.value[0]
+  if (next && next.id !== videoId.value) {
+    // 有推荐视频 → 跳转
+    router.push(`/video/${next.id}`)
+  } else if (videoPlayerRef.value?.videoRef) {
+    // 无推荐 → 原地循环播放
+    const el = videoPlayerRef.value.videoRef as HTMLVideoElement
+    el.currentTime = 0
+    el.play().catch(() => {})
   }
 }
 

@@ -87,6 +87,8 @@ function onError() {
   loading.value = false
   error.value = true
 }
+
+defineExpose({ videoRef })
 </script>
 
 <style scoped>

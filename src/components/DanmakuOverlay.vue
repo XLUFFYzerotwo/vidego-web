@@ -1,7 +1,10 @@
 <template>
   <div
     class="danmaku-overlay"
-    :class="{ 'is-hidden': !props.settings.enabled }"
+    :class="{
+      'is-hidden': !props.settings.enabled,
+      'is-paused': !props.isPlaying
+    }"
     :style="{ opacity: props.settings.opacity }"
   >
     <div
@@ -10,6 +13,8 @@
       class="danmaku-item"
       :class="[getDanmakuClass(danmaku.type), `font-${props.settings.fontSize}`]"
       :style="getDanmakuStyle(danmaku)"
+      :data-unique-id="danmaku.uniqueId"
+      @animationend="onAnimationEnd"
     >
       {{ danmaku.content }}
     </div>
@@ -32,6 +37,7 @@ interface DanmakuItem extends DanmakuVO {
 const props = withDefaults(defineProps<{
   videoId: number
   currentTime: number
+  isPlaying: boolean
   settings?: DanmakuSettings
   duration?: number        // 视频总时长（秒），用于控制预取边界
 }>(), {
@@ -159,12 +165,12 @@ function showDanmaku(d: DanmakuVO) {
 // ── 队列处理器（限速） ──
 
 function processQueue() {
-  if (danmakuQueue.value.length > 0) {
+  if (danmakuQueue.value.length > 0 && props.isPlaying) {
     const item = danmakuQueue.value.shift()!
     item.track = nextTrack
     nextTrack = (nextTrack + 1) % SCROLL_TRACK_COUNT
     activeDanmaku.value.push(item)
-    setTimeout(() => removeDanmaku(item.uniqueId), item.animDuration * 1000 + 500)
+    // 滚动弹幕由 onAnimationEnd 事件驱动移除，不再使用 setTimeout
   }
   animationTimer = window.setTimeout(processQueue, densityInterval.value)
 }
@@ -172,6 +178,19 @@ function processQueue() {
 function removeDanmaku(uniqueId: number) {
   const idx = activeDanmaku.value.findIndex(d => d.uniqueId === uniqueId)
   if (idx > -1) activeDanmaku.value.splice(idx, 1)
+}
+
+// ── CSS 动画完成事件（替代 setTimeout，兼容后台标签页） ──
+
+function onAnimationEnd(event: Event) {
+  const ae = event as AnimationEvent
+  // 只处理滚动弹幕的 scroll-left 动画
+  if (!ae.animationName.includes('scroll-left')) return
+  const el = ae.target as HTMLElement
+  const uniqueId = Number(el.dataset.uniqueId)
+  if (!isNaN(uniqueId)) {
+    removeDanmaku(uniqueId)
+  }
 }
 
 // ── WebSocket 实时弹幕 ──
@@ -190,20 +209,46 @@ function handleDanmakuReceived(danmaku: DanmakuVO) {
 // ── 重置（切换视频时） ──
 
 function reset() {
+  if (animationTimer) {
+    clearTimeout(animationTimer)
+    animationTimer = null
+  }
   activeDanmaku.value = []
   danmakuQueue.value = []
   danmakuPool.value = []
   poolIds.clear()
   displayIds.clear()
-  danmakuIdCounter = 0
   fetchedEnd.value = 0
   scanIndex = 0
   nextTrack = 0
   isFetching = false
+  prevTime = 0
   if (prefetchTimer) {
     clearTimeout(prefetchTimer)
     prefetchTimer = null
   }
+}
+
+// ── Seek 检测 ──
+
+let prevTime = 0
+
+function isSeek(now: number): boolean {
+  if (prevTime === 0) {
+    prevTime = now
+    return false
+  }
+  const delta = now - prevTime
+  prevTime = now
+  // 向后拖拽（delta < 0）或大幅向前跳（delta > 1.5s，超过正常 timeupdate 间隔）
+  return delta < 0 || delta > 1.5
+}
+
+function clearDisplayState() {
+  activeDanmaku.value = []
+  danmakuQueue.value = []
+  displayIds.clear()
+  scanIndex = 0
 }
 
 // ── Lifecycle ──
@@ -230,6 +275,11 @@ watch(() => props.videoId, async () => {
 })
 
 watch(() => props.currentTime, (now) => {
+  // 检测 seek：向后拖拽或大幅向前跳，清除屏幕弹幕并允许弹幕重复
+  if (isSeek(now)) {
+    clearDisplayState()
+  }
+
   scheduleFromPool(now)
 
   // 需要预取？
@@ -278,8 +328,13 @@ watch(() => props.currentTime, (now) => {
 
 .danmaku-scroll {
   top: calc(20% + var(--random-offset, 0px));
-  right: -100%;
-  animation: scroll-left linear forwards;
+  left: 100%;
+  animation: danmaku-scroll-left linear forwards;
+}
+
+/* 暂停时冻结所有滚动弹幕动画 */
+.danmaku-overlay.is-paused .danmaku-scroll {
+  animation-play-state: paused !important;
 }
 
 .danmaku-top {
@@ -294,12 +349,20 @@ watch(() => props.currentTime, (now) => {
   transform: translateX(-50%);
 }
 
-@keyframes scroll-left {
+@keyframes danmaku-scroll-left {
   from {
     transform: translateX(0);
   }
   to {
     transform: translateX(calc(-100% - 100vw));
   }
+}
+</style>
+
+<!-- 全局 keyframes：放在非 scoped 块内，保证 animationName 不被 Vue 哈希 -->
+<style>
+@keyframes danmaku-scroll-left {
+  from { transform: translateX(0); }
+  to { transform: translateX(calc(-100% - 100vw)); }
 }
 </style>

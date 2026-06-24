@@ -55,6 +55,11 @@ const FETCH_WINDOW = 60         // 每次预取的时间窗口（秒）
 const PREFETCH_MARGIN = 20      // 距离缓存末端多远时触发预取
 const SCROLL_TRACK_COUNT = 6    // 滚动弹幕轨道数
 const TRACK_HEIGHT = 40         // 每轨道像素高度
+const TOP_TRACK_COUNT = 5       // 顶部弹幕轨道数
+const BOTTOM_TRACK_COUNT = 5    // 底部弹幕轨道数
+const TRACK_SPACING = 8         // 弹幕轨道间距（百分比）
+const TOP_INITIAL = 8           // 顶部弹幕起始位置（百分比）
+const BOTTOM_INITIAL = 12       // 底部弹幕起始位置（百分比）
 const TOP_BOTTOM_DURATION = 3000  // 顶部/底部弹幕停留时间（ms）
 
 // ── State ──
@@ -67,6 +72,8 @@ const fetchedEnd = ref(0)                            // 已预取的最远时间
 let isFetching = false
 let danmakuIdCounter = 0
 let nextTrack = 0
+let nextTopTrack = 0
+let nextBottomTrack = 0
 let animationTimer: number | null = null
 let prefetchTimer: number | null = null
 let scanIndex = 0                                    // 遍历 pool 的游标
@@ -85,11 +92,27 @@ function getDanmakuClass(type: number) {
 }
 
 function getDanmakuStyle(danmaku: DanmakuItem) {
-  return {
+  const style: Record<string, string> = {
     color: danmaku.color,
     animationDuration: `${danmaku.animDuration}s`,
-    '--random-offset': `${danmaku.track * TRACK_HEIGHT}px`,
-  } as any
+  }
+
+  if (danmaku.type === 0) {
+    // 滚动弹幕：通过 CSS 变量控制垂直轨道
+    style['--random-offset'] = `${danmaku.track * TRACK_HEIGHT}px`
+  } else if (danmaku.type === 1) {
+    // 顶部弹幕：从 TOP_INITIAL 向下排列
+    style.top = `${TOP_INITIAL + danmaku.track * TRACK_SPACING}%`
+    style.left = '50%'
+    style.transform = 'translateX(-50%)'
+  } else if (danmaku.type === 2) {
+    // 底部弹幕：从 BOTTOM_INITIAL 向上排列
+    style.bottom = `${BOTTOM_INITIAL + danmaku.track * TRACK_SPACING}%`
+    style.left = '50%'
+    style.transform = 'translateX(-50%)'
+  }
+
+  return style as any
 }
 
 // ── 数据获取（滑动窗口） ──
@@ -155,9 +178,17 @@ function showDanmaku(d: DanmakuVO) {
   if (d.type === 0) {
     // 滚动弹幕 → 入队列，由 processQueue 限速调度
     danmakuQueue.value.push({ ...d, uniqueId, animDuration, track: 0 })
+  } else if (d.type === 1) {
+    // 顶部弹幕 → 分配轨道，立刻展示
+    const track = nextTopTrack
+    nextTopTrack = (nextTopTrack + 1) % TOP_TRACK_COUNT
+    activeDanmaku.value.push({ ...d, uniqueId, animDuration, track })
+    setTimeout(() => removeDanmaku(uniqueId), TOP_BOTTOM_DURATION)
   } else {
-    // 顶部 / 底部弹幕 → 立刻展示
-    activeDanmaku.value.push({ ...d, uniqueId, animDuration, track: 0 })
+    // 底部弹幕 → 分配轨道，立刻展示
+    const track = nextBottomTrack
+    nextBottomTrack = (nextBottomTrack + 1) % BOTTOM_TRACK_COUNT
+    activeDanmaku.value.push({ ...d, uniqueId, animDuration, track })
     setTimeout(() => removeDanmaku(uniqueId), TOP_BOTTOM_DURATION)
   }
 }
@@ -229,6 +260,8 @@ function reset() {
   fetchedEnd.value = 0
   scanIndex = 0
   nextTrack = 0
+  nextTopTrack = 0
+  nextBottomTrack = 0
   isFetching = false
   prevTime = 0
   if (prefetchTimer) {
@@ -257,6 +290,8 @@ function clearDisplayState() {
   danmakuQueue.value = []
   displayIds.clear()
   scanIndex = 0
+  nextTopTrack = 0
+  nextBottomTrack = 0
 }
 
 // ── Lifecycle ──
@@ -353,15 +388,11 @@ watch(() => props.currentTime, (now) => {
 }
 
 .danmaku-top {
-  top: 10%;
-  left: 50%;
-  transform: translateX(-50%);
+  /* top/left/transform 由 getDanmakuStyle 动态设置 */
 }
 
 .danmaku-bottom {
-  bottom: 15%;
-  left: 50%;
-  transform: translateX(-50%);
+  /* bottom/left/transform 由 getDanmakuStyle 动态设置 */
 }
 
 @keyframes danmaku-scroll-left {

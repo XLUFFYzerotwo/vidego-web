@@ -65,11 +65,11 @@ interface Category {
 
 const categories: Category[] = [
   { key: '', label: 'Recommended' },
-  { key: 'Tech', label: 'Tech' },
+  { key: 'Anime', label: 'Anime' },
   { key: 'Life', label: 'Life' },
   { key: 'Gaming', label: 'Gaming' },
   { key: 'Music', label: 'Music' },
-  { key: 'Education', label: 'Education' },
+  { key: 'Movies', label: 'Movies' },
   { key: 'Sports', label: 'Sports' },
   { key: 'Vlog', label: 'Vlog' },
 ]

@@ -71,6 +71,7 @@ const categories: Category[] = [
   { key: 'Music', label: 'Music' },
   { key: 'Movies', label: 'Movies' },
   { key: 'Sports', label: 'Sports' },
+  { key: 'Entertainment', label: 'Entertainment' },
   { key: 'Vlog', label: 'Vlog' },
 ]
 
